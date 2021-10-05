@@ -1,0 +1,22 @@
+INFO:**** starting processing file sample.xlsx
+INFO:**** output will be named as sample_21sep2021.xlsx in the output folder
+INFO:**** starting from row 3
+INFO:**** start processing row3 to row5
+INFO:Lock 140092562945936 acquired on /home/i29149/.cache/python-tldextract/3.8.5.final__yp__ecbd3f__tldextract-3.1.2/publicsuffix.org-tlds/de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+INFO:Lock 140092562987520 acquired on /home/i29149/.cache/python-tldextract/3.8.5.final__yp__ecbd3f__tldextract-3.1.2/urls/62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+INFO:Lock 140092562987520 released on /home/i29149/.cache/python-tldextract/3.8.5.final__yp__ecbd3f__tldextract-3.1.2/urls/62bf135d1c2f3d4db4228b9ecaf507a2.tldextract.json.lock
+INFO:Lock 140092562945936 released on /home/i29149/.cache/python-tldextract/3.8.5.final__yp__ecbd3f__tldextract-3.1.2/publicsuffix.org-tlds/de84b5ca2167d4c83e38fb162f2e8738.tldextract.json.lock
+INFO:**** Running for 0.05 minutes 
+INFO:**** row3 to row5 finished processing, file saved as tmp/sample_3_6.xlsx
+INFO:**** start processing row6 to row8
+INFO:**** Running for 0.12 minutes 
+INFO:**** row6 to row8 finished processing, file saved as tmp/sample_6_9.xlsx
+INFO:**** start processing row9 to row11
+INFO:**** Running for 0.20 minutes 
+INFO:**** row9 to row11 finished processing, file saved as tmp/sample_9_12.xlsx
+INFO:**** start processing row12 to row14
+INFO:**** Running for 0.22 minutes 
+INFO:**** row12 to row14 finished processing, file saved as tmp/sample_12_15.xlsx
+INFO:**** all files finished processing, file saved as output/sample_21sep2021.xlsx 
+INFO:**** Finished Running after 0.22 minutes 
+INFO:**** all files deleted under tmp folder 
