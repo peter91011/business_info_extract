@@ -45,7 +45,7 @@ USER_AGENTS = [
 ]
 
 
-SAVE_EVERY = 500
+SAVE_EVERY = 100
 
 TODAY = datetime.now()
 REPORT_NAME = TODAY.strftime("%d%b%Y").lower()
@@ -137,32 +137,41 @@ def get_contact_page(url, page):
 
     return contact_page_full
 
-def extract_businfo(sp,txt):
-    
-    bus_info_check = ['contact us','address','get in touch']
-    
-    if pyap.parse(txt,country='US'): 
-        info = str(pyap.parse(txt,country='US')[-1])
+
+def extract_businfo(sp, txt):
+    bus_info_check = ['contact us', 'address', 'get in touch']
+
+    if pyap.parse(txt, country='US'):
+        info = str(pyap.parse(txt, country='US')[-1])
         way = 'pyap'
 
-    elif sp.find_all(lambda tag:'@' in tag.text.lower()):
-        address_tag = sp.find_all(lambda tag:'@' in tag.text.lower())[-1]
+    elif sp.find_all(lambda tag: '@' in tag.text.lower()):
+        address_tag = sp.find_all(lambda tag: '@' in tag.text.lower())[-1]
         address_tag_text = address_tag.text
-        parent_tag = address_tag.find_parent(lambda t: containsNumber(t.text.lower().replace(address_tag_text,'')) and ',' in t.text)
-        info = parent_tag.text.replace('\n',' ').replace('\t',' ').replace('\xa0',' ')
-        way = 'email'
+        parent_tag = address_tag.find_parent(
+            lambda t: containsNumber(t.text.lower().replace(address_tag_text, '')) and ',' in t.text)
+        if parent_tag is None:
+            info = txt
+            way = 'contact page text'
+        else:
+            info = ' '.join(' '.join(list(parent_tag.stripped_strings)).replace('\n',' ').replace('\t',' ').replace('\xa0',' ').split())
+            way = 'email'
 
-    elif sp.find_all(lambda tag:tag.text.lower() in bus_info_check):
-        address_tag = sp.find_all(lambda tag:tag.text.lower() in bus_info_check)[-1]
-        parent_tag = address_tag.find_parent(lambda t:',' in t.text)
-        info = parent_tag.text.replace('\n',' ').replace('\t',' ').replace('\xa0',' ')
-        way = 'keyword'
+    elif sp.find_all(lambda tag: tag.text.lower() in bus_info_check):
+        address_tag = sp.find_all(lambda tag: tag.text.lower() in bus_info_check)[-1]
+        parent_tag = address_tag.find_parent(lambda t: ',' in t.text)
+        if parent_tag is not None:
+            info = ' '.join(' '.join(list(parent_tag.stripped_strings)).replace('\n',' ').replace('\t',' ').replace('\xa0',' ').split())
+            way = 'keyword'
+        else:
+            info = txt
+            way = 'contact page text'
 
     else:
         info = txt
         way = 'contact page text'
-        
-    return (info,way)
+
+    return (info, way)
 
 
 def parse_info(info):
@@ -190,11 +199,16 @@ def parse_info(info):
                 zipc.append(j[0])
                 break
 
-        add = ' '.join(street).replace(',','').strip()
-        occ = ' '.join(occupancy).replace(',','').strip()
-        city = ' '.join(placename).replace(',','').strip()
-        state = ' '.join(stat).replace(',','').strip()
-        zipcode = ' '.join(zipc).replace(',','').strip()
+        def f7(seq):
+            seen = set()
+            seen_add = seen.add
+            return [x for x in seq if not (x in seen or seen_add(x))]
+
+        add = ' '.join(f7(street)).replace(',','').strip()
+        occ = ' '.join(f7(occupancy)).replace(',','').strip()
+        city = ' '.join(f7(placename)).replace(',','').strip()
+        state = ' '.join(f7(stat)).replace(',','').strip()
+        zipcode = ' '.join(f7(zipc)).replace(',','').strip()
         
     except:
         add=''
@@ -206,32 +220,34 @@ def parse_info(info):
     return (add,occ,city,state,zipcode)
 
 
-def get_bus_name(url,sp):
-    
+def get_bus_name(url, sp):
     domain = get_domain(url)
-    title = sp.find('title').string
-    titles = title.split()
-    
-    name_list = []
-    for index in range(len(titles)):
-        if titles[index].lower() in domain.lower():
-            name_list.append(titles[index])
-            cur_index = index-1
-            while cur_index>=0 and titles[cur_index].replace("'",'').isalpha():
-                name_list = [titles[cur_index]]+name_list
-                cur_index -= 1
-            cur_index = index+1
-            while cur_index<len(titles) and titles[cur_index].replace("'",'').isalpha():
-                name_list.append(titles[cur_index])
-                cur_index += 1
-            break
-            
-    if name_list:
-        business_name = ' '.join(name_list).replace('Contact','').replace('contact','')
+    if sp.find('title') != None and sp.find('title').string is not None:
+        title = sp.find('title').string
+        titles = title.split()
+
+        name_list = []
+        for index in range(len(titles)):
+            if titles[index].lower() in domain.lower():
+                name_list.append(titles[index])
+                cur_index = index - 1
+                while cur_index >= 0 and titles[cur_index].replace("'", '').isalpha():
+                    name_list = [titles[cur_index]] + name_list
+                    cur_index -= 1
+                cur_index = index + 1
+                while cur_index < len(titles) and titles[cur_index].replace("'", '').isalpha():
+                    name_list.append(titles[cur_index])
+                    cur_index += 1
+                break
+
+        if name_list:
+            business_name = ' '.join(name_list).replace('Contact', '').replace('contact', '')
+        else:
+            business_name = domain.split('.')[0]
+
+        return business_name
     else:
-        business_name = domain.split('.')[0]
-        
-    return business_name
+        return ''
 
 
 def get_email(txt):
@@ -253,6 +269,7 @@ if __name__ == '__main__':
     
     start_time = datetime.now()
     start_row = 1
+
     if len(sys.argv) > 2:
         start_row = int(sys.argv[2])
     
@@ -267,7 +284,7 @@ if __name__ == '__main__':
     file = file.tail(len(file)-start_row+1)
     
     try:
-        file['url'] = file['url'].map(lambda x: x if x.startswith('http') else 'https://www.'+x+'/')
+        file['url'] = file['url'].map(lambda x: x if x.startswith('http') else 'https://www.'+x.replace('www.')+'/')
     except:
         logging.info(
         '**** no column named url, please change the column name')
@@ -284,44 +301,48 @@ if __name__ == '__main__':
     logging.info(
         f'**** start processing row{str(start)} to row{str(start+SAVE_EVERY-1)}')
     for index in file.index:
+        print(index)
         url = file['url'][index]
 
         try: 
             
             req = crawl(url)
-            contact_page = get_contact_page(url,req.content)
+            contact_page = get_contact_page(url, req.content)
             contact_req = crawl(contact_page)
             
             if str(contact_req) == '<Response [200]>' and str(req) == '<Response [200]>':
                 append_dic['contact_page'].append(contact_page)
                 soup1 = BeautifulSoup(req.content, "html.parser")
-                append_dic['text'].append(' '.join(list(soup1.stripped_strings)).replace('\n','').replace('\t','').replace('\xa0',''))
+                append_dic['text'].append(' '.join(' '.join(list(soup1.stripped_strings)).replace('\n',' ').replace('\t',' ').replace('\xa0',' ').split()))
                 soup = BeautifulSoup(contact_req.content, "html.parser")
-                contact_text = ' '.join(list(soup.stripped_strings)).replace('\n','').replace('\t','').replace('\xa0','')
+                contact_text = ' '.join(' '.join(list(soup.stripped_strings)).replace('\n',' ').replace('\t',' ').replace('\xa0',' ').split())
                 append_dic['contact_page_text'].append(contact_text)
             
-                info,way = extract_businfo(soup,contact_text)
+                info, way = extract_businfo(soup, contact_text)
+                info = info.replace(get_email(info), '').replace(get_phone(info), '')
                 append_dic['info'].append(info)
                 append_dic['way'].append(way)
                 
-                address,occupancy,city,state,zipcode = parse_info(info)
+                address, occupancy, city, state, zipcode = parse_info(info)
                 
                 if address == '' and way != 'contact page text':
                     append_dic['way'][-1] = 'contact page text'
-                    address,occupancy,city,state,zipcode = parse_info(contact_text)
-                    
+                    address, occupancy, city, state, zipcode = parse_info(contact_text)
+
+
                 append_dic['add'].append(address)
                 append_dic['occ'].append(occupancy)
                 append_dic['city'].append(city)
                 append_dic['state'].append(state)
                 append_dic['zipcode'].append(zipcode)
-                
-                business_name = get_bus_name(url,soup1)
+                print(url)
+                business_name = get_bus_name(url, soup1)
+
                 append_dic['business_name'].append(business_name)
                 
                 append_dic['email'].append(get_email(contact_req.text))
                 append_dic['phone'].append(get_phone(contact_req.text))
-            
+
             else:
                 for i in append_dic.keys():
                     if i=='way':
@@ -337,6 +358,7 @@ if __name__ == '__main__':
                     append_dic[i].append('')
                     
         current_processed = len(append_dic['way'])
+
         for i in append_dic.keys():
             if len(append_dic[i]) != current_processed:
                 logging.info(
