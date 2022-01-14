@@ -325,7 +325,7 @@ if __name__ == '__main__':
                 
                 address, occupancy, city, state, zipcode = parse_info(info)
                 
-                if address == '' and way != 'contact page text':
+                if address == '' and way != 'contact page text' and parse_info(contact_text)[0] != '':
                     append_dic['way'][-1] = 'contact page text'
                     address, occupancy, city, state, zipcode = parse_info(contact_text)
 
