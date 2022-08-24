@@ -16,7 +16,6 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize  
 import random
 import time
-import phonenumbers
 from collections import OrderedDict    
 import logging
 from tqdm import tqdm
